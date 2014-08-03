@@ -4,8 +4,9 @@ require 'nokogiri'
 require 'open-uri'
 
 def parse_page(url)
-  h = { :i => {}, :r => {}, :n => {} }
   doc = Nokogiri::HTML(open(url))
+  topic = doc.search('//h1[@class="topictitle"]')
+  h = { :i => {}, :r => {}, :n => {} }
   # properties are in a list (dl) as dt for the key and dd for the content
   properties = doc.search('//div[@class="variablelist"]/dl')
   properties.search('dt').each do |dt|
@@ -27,7 +28,7 @@ def parse_page(url)
       end
     end
   end
-  h
+  { topic.text.to_sym => h }
 end
 
 aws_doc_root = 'http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/'
