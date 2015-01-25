@@ -30,7 +30,7 @@ def parse_page(url)
         elsif /^ Replacement\.*$/.match(effect)
           h[property.to_sym] = { 'replacement'.to_sym => effect }
         elsif /^ Some interruptions$/.match(effect)
-          h[property.to_sym] = { 'someinterruption'.to_sym => effect }
+          h[property.to_sym] = { 'someinterruptions'.to_sym => effect }
         else
           h[property.to_sym] = { 'unknown'.to_sym => effect }
         end
