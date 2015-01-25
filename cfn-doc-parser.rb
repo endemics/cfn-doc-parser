@@ -38,14 +38,22 @@ def parse_page(url)
       end
     end
   end
-  { :name => topic.text.to_sym, :value => h }
+  { :name => topic.text, :value => h }
 end
 
-aws_pages = [
-  'aws-properties-ec2-instance.html',
-  'aws-properties-cloudfront-distribution.html'
-]
+def get_all_cfn_pages(base_url)
+  pages = []
 
+  topic_page = 'aws-template-resource-type-ref.html'
+  doc = Nokogiri::HTML(open("#{base_url}/#{topic_page}"))
+  page_list = doc.search('//*[@id="divContent"]/div[1]/div[2]/ul')
+  page_list.search('li').each do |rsc|
+    pages << rsc.search('a/@href').first.value
+  end
+  return pages
+end
+
+aws_pages = get_all_cfn_pages(aws_doc_root)
 result = {}
 aws_pages.each do |page|
   h = parse_page("#{aws_doc_root}#{page}")
