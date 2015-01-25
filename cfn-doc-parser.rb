@@ -2,7 +2,6 @@
 
 require 'nokogiri'
 require 'open-uri'
-require 'json'
 
 # All the documentation pages are attached to this URL
 aws_doc_root = 'http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/'
@@ -59,4 +58,5 @@ aws_pages.each do |page|
   h = parse_page("#{aws_doc_root}#{page}")
   result[h[:name]] = h[:value]
 end
-puts JSON.pretty_generate(result)
+print "$cfn_rsc_chng = "
+p result
