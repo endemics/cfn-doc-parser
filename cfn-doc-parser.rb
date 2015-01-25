@@ -2,42 +2,53 @@
 
 require 'nokogiri'
 require 'open-uri'
+require 'json'
+
+# All the documentation pages are attached to this URL
+aws_doc_root = 'http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/'
 
 def parse_page(url)
   doc = Nokogiri::HTML(open(url))
+  # Extract the topic from the page
   topic = doc.search('//h1[@class="topictitle"]')
-  h = { :i => {}, :r => {}, :n => {} }
+  h = {}
   # properties are in a list (dl) as dt for the key and dd for the content
   properties = doc.search('//div[@class="variablelist"]/dl')
   properties.search('dt').each do |dt|
     property = dt.text
 
+    # Let's assume the dd is the next element (risky but seems to work)
     dd = dt.next_element
+    # the dd will have several paragraphs (p resources)
+    # go through each and find for the one containing the string 'Update requires'
+    # //*[@id="divContent"]/div[1]/div[3]/div[2]/dl/dd[4]/p[5]/span/em
     dd.search('p').each do |p|
+      # p.search('em')
       if p.text.include?'Update requires'
-        effect = p.text.sub('Update requires:','')
-        if effect.include?'Replacement'
-          h[:r][property.to_sym] = effect
-        end
-        if effect.include?'Some interruptions'
-          h[:i][property.to_sym] = effect
-        end
-        if effect.include?'No interruption'
-          h[:n][property.to_sym] = effect
+        effect = p.text.sub('Update requires:','').sub("\n", '')
+        if /^ No interruption\.*$/.match(effect)
+          h[property.to_sym] = { 'nointerruption'.to_sym => effect }
+        elsif /^ Replacement\.*$/.match(effect)
+          h[property.to_sym] = { 'replacement'.to_sym => effect }
+        elsif /^ Some interruptions$/.match(effect)
+          h[property.to_sym] = { 'someinterruption'.to_sym => effect }
+        else
+          h[property.to_sym] = { 'unknown'.to_sym => effect }
         end
       end
     end
   end
-  { topic.text.to_sym => h }
+  { :name => topic.text.to_sym, :value => h }
 end
 
-aws_doc_root = 'http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/'
-aws_pages = ['aws-properties-cloudfront-distribution.html', 'aws-properties-ec2-instance.html']
 aws_pages = [
   'aws-properties-ec2-instance.html',
   'aws-properties-cloudfront-distribution.html'
 ]
 
+result = {}
 aws_pages.each do |page|
-  p parse_page("#{aws_doc_root}#{page}")
+  h = parse_page("#{aws_doc_root}#{page}")
+  result[h[:name]] = h[:value]
 end
+puts JSON.pretty_generate(result)
